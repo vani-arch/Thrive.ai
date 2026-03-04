@@ -8,15 +8,10 @@ interface PlaybookTask {
     humanMins: number;
     aiMins: number;
     depth?: string;
-    handover?: {
-        who?: string;
-        steps?: string[];
-        timeline?: string;
-        monitor?: string;
-    };
+    handover?: any;
     promptChain?: any;
-    aiAssist?: string;
-    checkpoint?: string;
+    aiAssist?: any;
+    checkpoint?: any;
     tenX?: string;
 }
 
@@ -85,6 +80,35 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
             ));
         }
         return <p className="text-sm text-gray-700">{String(chain)}</p>;
+    };
+
+    const renderObjectFields = (obj: any) => {
+        if (!obj) return null;
+        if (typeof obj === "string") return <p className="text-sm text-gray-800">{obj}</p>;
+
+        return (
+            <div className="space-y-3">
+                {Object.entries(obj).map(([key, value], i) => {
+                    if (value == null) return null;
+                    return (
+                        <div key={i}>
+                            <span className="text-gray-500 block mb-1 text-xs uppercase font-semibold tracking-wider capitalize">
+                                {key.replace(/([A-Z])/g, ' $1').trim()}:
+                            </span>
+                            {Array.isArray(value) ? (
+                                <ul className="list-disc pl-4 space-y-1 text-sm text-gray-800">
+                                    {value.map((v, j) => <li key={j}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</li>)}
+                                </ul>
+                            ) : typeof value === 'object' ? (
+                                <span className="text-sm text-gray-800">{JSON.stringify(value)}</span>
+                            ) : (
+                                <span className="text-sm text-gray-800">{String(value)}</span>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
@@ -179,28 +203,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                                                 <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-2">
                                                     Handover Protocol
                                                 </h4>
-                                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                                    <div>
-                                                        <span className="text-gray-500 block mb-1">To Who:</span>
-                                                        <span className="font-semibold">{task.handover.who || "N/A"}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-500 block mb-1">Timeline:</span>
-                                                        <span className="font-semibold">{task.handover.timeline || "N/A"}</span>
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <span className="text-gray-500 block mb-1">Steps:</span>
-                                                        <ul className="list-disc pl-4 space-y-1">
-                                                            {task.handover.steps && Array.isArray(task.handover.steps)
-                                                                ? task.handover.steps.map((s, i) => <li key={i}>{s}</li>)
-                                                                : <li>{String(task.handover.steps || "N/A")}</li>}
-                                                        </ul>
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <span className="text-gray-500 block mb-1">Monitor:</span>
-                                                        <span className="italic">{task.handover.monitor || "N/A"}</span>
-                                                    </div>
-                                                </div>
+                                                {renderObjectFields(task.handover)}
                                             </div>
                                         </div>
                                     )}
@@ -228,7 +231,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                                                     <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-2">
                                                         Human Checkpoint
                                                     </h4>
-                                                    <p className="text-sm text-gray-800">{task.checkpoint}</p>
+                                                    {renderObjectFields(task.checkpoint)}
                                                 </div>
                                             )}
                                         </div>
@@ -241,7 +244,37 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                                                     <h4 className="text-xs font-bold text-purple-800 uppercase tracking-wider mb-2">
                                                         AI Assist Layer
                                                     </h4>
-                                                    <p className="text-sm text-gray-800">{task.aiAssist}</p>
+                                                    {typeof task.aiAssist === 'object' ? (
+                                                        <div className="space-y-3">
+                                                            {task.aiAssist.aiPreps && (
+                                                                <div>
+                                                                    <span className="text-gray-500 block mb-1 text-xs uppercase font-semibold tracking-wider">AI prepares:</span>
+                                                                    <span className="text-sm text-gray-800">{String(task.aiAssist.aiPreps)}</span>
+                                                                </div>
+                                                            )}
+                                                            {task.aiAssist.humanDoes && (
+                                                                <div>
+                                                                    <span className="text-gray-500 block mb-1 text-xs uppercase font-semibold tracking-wider">You do:</span>
+                                                                    <span className="text-sm text-gray-800">{String(task.aiAssist.humanDoes)}</span>
+                                                                </div>
+                                                            )}
+                                                            {task.aiAssist.handoff && (
+                                                                <div>
+                                                                    <span className="text-gray-500 block mb-1 text-xs uppercase font-semibold tracking-wider">Handoff moment:</span>
+                                                                    <span className="text-sm text-gray-800">{String(task.aiAssist.handoff)}</span>
+                                                                </div>
+                                                            )}
+                                                            {/* Render any other unforeseen keys */}
+                                                            {Object.entries(task.aiAssist).filter(([k]) => !['aiPreps', 'humanDoes', 'handoff'].includes(k)).map(([k, v]) => (
+                                                                <div key={k}>
+                                                                    <span className="text-gray-500 block mb-1 text-xs uppercase font-semibold tracking-wider capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                                                                    <span className="text-sm text-gray-800">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm text-gray-800">{String(task.aiAssist)}</p>
+                                                    )}
                                                 </div>
                                             )}
                                             {task.checkpoint && (
@@ -249,7 +282,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                                                     <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-2">
                                                         Judgment Checkpoint
                                                     </h4>
-                                                    <p className="text-sm text-gray-800">{task.checkpoint}</p>
+                                                    {renderObjectFields(task.checkpoint)}
                                                 </div>
                                             )}
                                         </div>
