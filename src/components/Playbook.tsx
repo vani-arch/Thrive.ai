@@ -8,14 +8,19 @@ interface PlaybookTask {
     humanMins: number;
     aiMins: number;
     depth?: string;
-    handover?: any;
-    promptChain?: any;
-    aiAssist?: any;
-    checkpoint?: any;
+    handover?: Record<string, unknown>;
+    promptChain?: string[] | Record<string, unknown> | string;
+    aiAssist?: {
+        aiPreps?: string;
+        humanDoes?: string;
+        handoff?: string;
+        [key: string]: unknown;
+    } | string;
+    checkpoint?: Record<string, unknown> | string;
     tenX?: string;
 }
 
-interface PlaybookData {
+export interface PlaybookData {
     hoursReclaimed: number;
     desireEcho: string;
     tasks: PlaybookTask[];
@@ -62,7 +67,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
 
     const visibleTasks = getVisibleTasks();
 
-    const renderPromptChain = (chain: any) => {
+    const renderPromptChain = (chain: unknown) => {
         if (!chain) return null;
         if (Array.isArray(chain)) {
             return chain.map((step, i) => (
@@ -82,7 +87,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
         return <p className="text-sm text-gray-700">{String(chain)}</p>;
     };
 
-    const renderObjectFields = (obj: any) => {
+    const renderObjectFields = (obj: unknown) => {
         if (!obj) return null;
         if (typeof obj === "string") return <p className="text-sm text-gray-800">{obj}</p>;
 
@@ -124,7 +129,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                     </h2>
                     {playbookData?.desireEcho && (
                         <p className="text-gray-600 mt-2 max-w-2xl text-[15px] italic border-l-2 border-orange-200 pl-4 py-1">
-                            "{playbookData.desireEcho}"
+                            &quot;{playbookData.desireEcho}&quot;
                         </p>
                     )}
                 </div>
@@ -273,7 +278,7 @@ export default function Playbook({ role, playbookData, onStartOver }: Props) {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <p className="text-sm text-gray-800">{String(task.aiAssist)}</p>
+                                                        <p className="text-sm text-gray-800">{typeof task.aiAssist === 'string' ? task.aiAssist : ''}</p>
                                                     )}
                                                 </div>
                                             )}

@@ -15,10 +15,10 @@ export default function StepElevenPm({ role, elevenPm, setElevenPm, onNext, onBa
         <div className="w-full max-w-4xl flex flex-col items-center animate-in fade-in duration-500">
             <div className="text-center mb-[3rem] w-full mt-4">
                 <h2 className="text-[3rem] md:text-[4.5rem] font-medium mb-4 text-[#2C2C2C] tracking-tight font-serif leading-tight">
-                    It's 11 PM.
+                    It&apos;s 11 PM.
                 </h2>
                 <p className="text-[1.2rem] text-gray-500 font-sans tracking-normal mt-2 max-w-2xl mx-auto">
-                    As a {role || "professional"}, what's the one task keeping you up at night? The thing you dread doing manually every week.
+                    As a {role || "professional"}, what&apos;s the one task keeping you up at night? The thing you dread doing manually every week.
                 </p>
             </div>
 

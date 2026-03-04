@@ -5,7 +5,7 @@ import StepOnboarding from "@/components/StepOnboarding";
 import StepWeekMirror from "@/components/StepWeekMirror";
 import StepElevenPm from "@/components/StepElevenPm";
 import StepDesire from "@/components/StepDesire";
-import Playbook from "@/components/Playbook";
+import Playbook, { PlaybookData } from "@/components/Playbook";
 
 export default function Home() {
   const [step, setStep] = useState(1);
@@ -15,7 +15,7 @@ export default function Home() {
   const [desire, setDesire] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState(0);
-  const [playbookData, setPlaybookData] = useState<any>(null);
+  const [playbookData, setPlaybookData] = useState<PlaybookData | null>(null);
 
   useEffect(() => {
     if (!loading) return;
