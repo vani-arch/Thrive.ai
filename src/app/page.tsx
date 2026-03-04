@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StepOnboarding from "@/components/StepOnboarding";
 import StepWeekMirror from "@/components/StepWeekMirror";
 import StepElevenPm from "@/components/StepElevenPm";
@@ -14,15 +14,41 @@ export default function Home() {
   const [elevenPm, setElevenPm] = useState("");
   const [desire, setDesire] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState(0);
+  const [playbookData, setPlaybookData] = useState<any>(null);
 
-  const generatePlaybook = () => {
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingPhase((prev) => (prev < 2 ? prev + 1 : prev));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  const generatePlaybook = async () => {
     setLoading(true);
     setStep(5);
+    setLoadingPhase(0);
 
-    // Simulate generation delay
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/generate-playbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, tasks, elevenPm, desire })
+      });
+
+      console.log('API status:', res.status);
+      const rawText = await res.text();
+      console.log('Raw API Response text:', rawText);
+
+      const data = JSON.parse(rawText);
+      console.log("Parsed Playbook API Response:", data);
+      setPlaybookData(data);
+    } catch (error) {
+      console.error("Failed to generate playbook", error);
+    } finally {
       setLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -72,21 +98,35 @@ export default function Home() {
         )}
 
         {step === 5 && loading && (
-          <div className="flex flex-col items-center justify-center animate-in fade-in duration-500 h-[60vh]">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin mb-6"></div>
-            <h2 className="text-2xl font-serif text-gray-900 mb-2">Generating your custom playbook...</h2>
-            <p className="text-gray-500">Processing {tasks.length} tasks for {role}</p>
+          <div className="flex flex-col items-center justify-center animate-in fade-in duration-500 min-h-[50vh] bg-[#FAFAF8] w-full rounded-2xl shadow-sm border border-gray-100 p-8 text-center ring-1 ring-black/5">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin mb-8"></div>
+            <div className="h-8 relative w-full flex justify-center items-center">
+              {loadingPhase === 0 && (
+                <p className="text-xl font-serif text-gray-800 animate-in fade-in slide-in-from-bottom-2 absolute">
+                  Mapping your workflow...
+                </p>
+              )}
+              {loadingPhase === 1 && (
+                <p className="text-xl font-serif text-gray-800 animate-in fade-in slide-in-from-bottom-2 absolute">
+                  Identifying where AI fits...
+                </p>
+              )}
+              {loadingPhase === 2 && (
+                <p className="text-xl font-serif text-gray-800 animate-in fade-in slide-in-from-bottom-2 absolute">
+                  Building your Human Checkpoints...
+                </p>
+              )}
+            </div>
           </div>
         )}
 
         {step === 5 && !loading && (
           <Playbook
             role={role}
-            tasks={tasks}
-            elevenPm={elevenPm}
-            desire={desire}
+            playbookData={playbookData}
             onStartOver={() => {
               setStep(1);
+              setPlaybookData(null);
             }}
           />
         )}
