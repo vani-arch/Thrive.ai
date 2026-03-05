@@ -5,7 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import StepWeekMirror from "@/components/StepWeekMirror";
+import KanbanRiver from "@/components/KanbanRiver";
 import StepElevenPm from "@/components/StepElevenPm";
 import StepDesire from "@/components/StepDesire";
 import Playbook, { PlaybookData } from "@/components/Playbook";
@@ -14,9 +14,8 @@ export default function OnboardingPage() {
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
 
-    const [step, setStep] = useState(1); // 1: WeekMirror, 2: ElevenPm, 3: Desire, 4: Generating/Playbook
+    const [step, setStep] = useState(1); // 1: KanbanRiver, 2: ElevenPm, 3: Desire, 4: Generating/Playbook
     const [role, setRole] = useState("");
-    const [tasks, setTasks] = useState<string[]>([]);
     const [elevenPm, setElevenPm] = useState("");
     const [desire, setDesire] = useState("");
     const [loading, setLoading] = useState(false);
@@ -64,10 +63,11 @@ export default function OnboardingPage() {
         setLoadingPhase(0);
 
         try {
+            // Temporarily passing empty tasks array to satisfy backend signature before full backend refactor
             const res = await fetch("/api/generate-playbook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ role, tasks, elevenPm, desire })
+                body: JSON.stringify({ role, tasks: [], elevenPm, desire })
             });
 
             const rawText = await res.text();
@@ -102,13 +102,10 @@ export default function OnboardingPage() {
             </div>
 
             <div className="w-full flex justify-center mt-12 mb-8">
-                {step === 1 && (
-                    <StepWeekMirror
-                        role={role}
-                        tasks={tasks}
-                        setTasks={setTasks}
-                        onNext={() => setStep(2)}
-                        onBack={() => router.push('/dashboard')}
+                {step === 1 && user && (
+                    <KanbanRiver
+                        userId={user.uid}
+                        onComplete={() => setStep(2)}
                     />
                 )}
 
