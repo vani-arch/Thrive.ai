@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -12,6 +12,14 @@ export default function SignupPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [role, setRole] = useState("");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const r = params.get("role");
+            if (r) setRole(r);
+        }
+    }, []);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -32,8 +40,8 @@ export default function SignupPage() {
                 createdAt: serverTimestamp()
             });
 
-            // Redirect to onboarding (index)
-            router.push("/");
+            // Redirect to onboarding wizard
+            router.push("/onboarding");
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);

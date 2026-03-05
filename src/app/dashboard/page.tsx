@@ -76,7 +76,7 @@ export default function DashboardPage() {
 
                 {/* Action Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Link href="/" className="group block p-8 border border-gray-200 rounded-2xl hover:border-orange-200 hover:shadow-md transition-all bg-white overflow-hidden relative">
+                    <Link href="/onboarding" className="group block p-8 border border-gray-200 rounded-2xl hover:border-orange-200 hover:shadow-md transition-all bg-white overflow-hidden relative">
                         <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
                         <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-6">
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
