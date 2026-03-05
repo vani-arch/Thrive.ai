@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, getAdditionalUserInfo } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function SignupPage() {
     const [name, setName] = useState("");
@@ -53,6 +54,37 @@ export default function SignupPage() {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const additionalInfo = getAdditionalUserInfo(result);
+
+            if (additionalInfo?.isNewUser) {
+                // Save new user profile to Firestore
+                await setDoc(doc(db, "users", result.user.uid), {
+                    name: result.user.displayName || "",
+                    email: result.user.email || "",
+                    role: role || "",
+                    createdAt: serverTimestamp()
+                });
+                router.push("/onboarding");
+            } else {
+                router.push("/dashboard");
+            }
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unknown error occurred.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <main className="min-h-screen flex items-center justify-center bg-[#f9f9f9] p-4">
             <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-gray-100">
@@ -63,6 +95,23 @@ export default function SignupPage() {
                 </div>
                 <h1 className="text-[2rem] font-serif text-gray-900 mb-6 text-center">Create Account</h1>
                 {error && <p className="text-red-500 text-sm mb-6 text-center bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
+
+                <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-[8px] font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Image src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" width={20} height={20} className="w-5 h-5" />
+                    Continue with Google
+                </button>
+
+                <div className="relative my-6 flex items-center">
+                    <div className="flex-grow border-t border-gray-200"></div>
+                    <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">or continue with email</span>
+                    <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+
                 <form onSubmit={handleSignup} className="space-y-5">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-wide">Full Name</label>
