@@ -112,42 +112,104 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
     };
 
 
-    // --- COMPUTED VISUALS ---
-    const activeDays = new Set(addedTasks.filter(t => t.day).map(t => t.day));
     const progressPercent = Math.min((addedTasks.length / 5) * 100, 100);
     const canContinueEarly = addedTasks.length >= 5;
 
     return (
         <div className="fixed inset-0 bg-[#FAF9F6] flex flex-col items-center justify-between overflow-hidden font-sans view-height overscroll-none">
 
-            {/* Top Section */}
-            <div className="w-full pt-16 px-6 flex flex-col items-center z-10">
-                <h1 className="text-[2rem] md:text-[2.5rem] font-serif text-[#1C1917] tracking-tight mb-2 text-center">
-                    What does your week look like?
-                </h1>
-                <p className="text-[17px] text-[#A8A29E] mb-8 font-light tracking-wide text-center">
-                    Swipe through tasks. Add what fits your week.
-                </p>
+            {/* Top Section - The Week Board */}
+            <div className="w-full h-[55vh] pt-12 px-6 flex flex-col z-10 overflow-y-auto no-scrollbar">
+                <div className="flex flex-col items-center mb-8 shrink-0">
+                    <h1 className="text-[2rem] md:text-[2.5rem] font-serif text-[#1C1917] tracking-tight mb-2 text-center">
+                        What does your week look like?
+                    </h1>
+                    <p className="text-[17px] text-[#A8A29E] font-light tracking-wide text-center">
+                        Swipe to add. Tap to remove.
+                    </p>
+                </div>
 
-                {/* Day Pills */}
-                <div className="flex gap-2 mb-4">
+                {/* Day Columns / Rows */}
+                <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 pb-8 shrink-0">
                     {DAYS.map((day) => {
-                        const isActive = activeDays.has(day);
+                        const dayTasks = addedTasks.filter(t => t.day === day);
+                        const hasTasks = dayTasks.length > 0;
+
                         return (
-                            <div
-                                key={day}
-                                className={`px-4 py-1.5 rounded-full text-sm transition-colors duration-500 font-medium tracking-wide
-                  ${isActive ? "bg-[#D4622A] text-white shadow-sm" : "bg-[#F5F5F4] text-[#A8A29E]"}`}
-                            >
-                                {day}
+                            <div key={day} className="flex flex-col">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`px-3 py-1 rounded-full text-xs font-medium tracking-wide transition-colors
+                                        ${hasTasks ? "bg-[#D4622A] text-white" : "bg-[#F5F5F4] text-[#A8A29E]"}`}
+                                    >
+                                        {day}
+                                    </div>
+                                    {!hasTasks && <div className="h-[1px] flex-1 bg-[#F5F5F4]"></div>}
+                                </div>
+
+                                <AnimatePresence>
+                                    {dayTasks.map(task => (
+                                        <motion.div
+                                            key={task.id}
+                                            initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                            exit={{ opacity: 0, height: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                            className="group flex items-center justify-between py-2.5 px-3 mb-1.5 -ml-3 rounded-xl hover:bg-[#F5F5F4]/50 transition-colors"
+                                        >
+                                            <span className="text-[15px] text-[#1C1917] font-medium leading-snug">
+                                                {task.name}
+                                            </span>
+                                            <button
+                                                onClick={() => setAddedTasks(prev => prev.filter(t => t.id !== task.id))}
+                                                className="text-[#A8A29E] opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-50 p-1.5 rounded-md transition-all flex-shrink-0"
+                                                title="Remove task"
+                                            >
+                                                <X size={16} strokeWidth={2.5} />
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+
+                                <div className="h-2"></div>
                             </div>
                         );
                     })}
+
+                    {/* Unassigned Tasks (Added to 'My Week' but no specific day) */}
+                    {addedTasks.filter(t => !t.day).length > 0 && (
+                        <div className="flex flex-col mt-4">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="px-3 py-1 rounded-full text-xs font-medium tracking-wide bg-[#8FAF8F] text-white">
+                                    Anytime
+                                </div>
+                            </div>
+                            <AnimatePresence>
+                                {addedTasks.filter(t => !t.day).map(task => (
+                                    <motion.div
+                                        key={task.id}
+                                        initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                        exit={{ opacity: 0, height: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                        className="group flex items-center justify-between py-2.5 px-3 mb-1.5 -ml-3 rounded-xl hover:bg-[#F5F5F4]/50 transition-colors"
+                                    >
+                                        <span className="text-[15px] text-[#1C1917] font-medium leading-snug">
+                                            {task.name}
+                                        </span>
+                                        <button
+                                            onClick={() => setAddedTasks(prev => prev.filter(t => t.id !== task.id))}
+                                            className="text-[#A8A29E] opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-50 p-1.5 rounded-md transition-all flex-shrink-0"
+                                        >
+                                            <X size={16} strokeWidth={2.5} />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Center - The River Cards */}
-            <div className="flex-1 w-full flex items-center justify-center relative perspective-1000 z-20">
+            {/* Bottom Half - The River Cards (Tinder Swipe) */}
+            <div className="h-[45vh] w-full flex items-center justify-center relative perspective-1000 z-20 pb-12">
                 <AnimatePresence mode="popLayout">
                     {currentTask && !showDaysFor && (
                         <motion.div
@@ -242,31 +304,49 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                     )}
 
                     {/* Completion State */}
-                    {taskQueue.length === 0 && !showDaysFor && (
+                    {taskQueue.length === 0 && !showDaysFor && addedTasks.length >= 5 && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="text-center z-10"
                         >
-                            <div className="w-20 h-20 mx-auto bg-[#D4622A]/10 rounded-full flex items-center justify-center mb-6">
-                                <Sparkles className="text-[#D4622A]" size={32} />
+                            <div className="w-16 h-16 mx-auto bg-[#D4622A]/10 rounded-full flex items-center justify-center mb-4">
+                                <Sparkles className="text-[#D4622A]" size={24} />
                             </div>
-                            <h2 className="text-2xl font-serif text-[#1C1917] mb-2">Great week.</h2>
-                            <p className="text-[#A8A29E]">You&apos;ve mapped out {addedTasks.length} tasks.</p>
+                            <h2 className="text-xl font-serif text-[#1C1917] mb-1">Great week.</h2>
+                            <p className="text-sm text-[#A8A29E]">Ready to build your playbook.</p>
+                        </motion.div>
+                    )}
+
+                    {/* Empty State warning if they swiped skip on everything */}
+                    {taskQueue.length === 0 && !showDaysFor && addedTasks.length < 5 && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-center z-10 bg-white p-6 rounded-3xl shadow-sm border border-orange-100 max-w-sm"
+                        >
+                            <h2 className="text-lg font-serif text-orange-600 mb-2">Almost there!</h2>
+                            <p className="text-sm text-[#A8A29E] mb-4">Please add at least 5 tasks to build a high-quality playbook.</p>
+                            <button
+                                onClick={() => setTaskQueue(["CUSTOM"])}
+                                className="px-6 py-2 bg-orange-50 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-100 transition-colors"
+                            >
+                                + Add custom task
+                            </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* Completion Button - Rises when >= 5 tasks */}
+            {/* Completion Button - Rises when >= 5 tasks AND queue is empty so it doesn't block swipes early */}
             <AnimatePresence>
-                {(canContinueEarly || taskQueue.length === 0) && (
+                {(canContinueEarly && taskQueue.length === 0) && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                        className="absolute bottom-16 z-50 w-full flex justify-center"
+                        className="absolute bottom-12 z-50 w-full flex justify-center"
                     >
                         <button
                             onClick={handleFinish}
