@@ -25,14 +25,14 @@ const PREDEFINED_TASKS = [
     "Planning and strategy sessions",
 ];
 
-type Day = "Mon" | "Tue" | "Wed" | "Thu" | "Fri";
-const DAYS: Day[] = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+type TimeSlot = "Morning" | "Afternoon" | "Evening";
+const TIMES: TimeSlot[] = ["Morning", "Afternoon", "Evening"];
 
 export default function KanbanRiver({ userId, onComplete }: Props) {
     // --- STATE ---
     const [taskQueue, setTaskQueue] = useState([...PREDEFINED_TASKS, "CUSTOM"]);
-    const [addedTasks, setAddedTasks] = useState<{ id: string; name: string; day?: Day }[]>([]);
-    const [showDaysFor, setShowDaysFor] = useState<string | null>(null); // current task being assigned a day
+    const [addedTasks, setAddedTasks] = useState<{ id: string; name: string; time?: TimeSlot }[]>([]);
+    const [showTimeFor, setShowTimeFor] = useState<string | null>(null); // current task being assigned a time
     const [customInput, setCustomInput] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
@@ -55,10 +55,10 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
         const { offset } = info;
 
         if (offset.y < -swipeThreshold && Math.abs(offset.x) < swipeThreshold) {
-            // Swipe Up -> Prompt Day Picker
-            triggerDayPicker();
+            // Swipe Up -> Prompt Time Picker
+            triggerTimePicker();
         } else if (offset.x > swipeThreshold) {
-            // Swipe Right -> Add to Week
+            // Swipe Right -> Add to Day
             handleAction("ADD");
         } else if (offset.x < -swipeThreshold) {
             // Swipe Left -> Skip
@@ -80,27 +80,27 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
             setTaskQueue((prev) => prev.slice(1));
             if (isCustomMode) setCustomInput("");
         } else if (type === "ADD_TO_DAY") {
-            triggerDayPicker();
+            triggerTimePicker();
         }
     };
 
-    const triggerDayPicker = () => {
+    const triggerTimePicker = () => {
         if (isCustomMode && !customInput.trim()) return;
-        setShowDaysFor(isCustomMode ? customInput.trim() : currentTask);
+        setShowTimeFor(isCustomMode ? customInput.trim() : currentTask);
     };
 
-    const assignDay = (day: Day) => {
-        if (!showDaysFor) return;
-        setAddedTasks((prev) => [...prev, { id: Date.now().toString(), name: showDaysFor, day }]);
+    const assignTime = (time: TimeSlot) => {
+        if (!showTimeFor) return;
+        setAddedTasks((prev) => [...prev, { id: Date.now().toString(), name: showTimeFor, time }]);
         setTaskQueue((prev) => prev.slice(1));
-        setShowDaysFor(null);
+        setShowTimeFor(null);
         if (isCustomMode) setCustomInput("");
     };
 
     const handleFinish = async () => {
         setIsSaving(true);
         try {
-            const dbTasks = addedTasks.map(t => t.day ? `${t.name} (${t.day})` : t.name);
+            const dbTasks = addedTasks.map(t => t.time ? `${t.name} (${t.time})` : t.name);
             await updateDoc(doc(db, "users", userId), {
                 weeklyTasks: dbTasks
             });
@@ -118,11 +118,11 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
     return (
         <div className="fixed inset-0 bg-[#FAF9F6] flex flex-col items-center justify-between overflow-hidden font-sans view-height overscroll-none">
 
-            {/* Top Section - The Week Board */}
+            {/* Top Section - The Board */}
             <div className="w-full h-[55vh] pt-12 px-6 flex flex-col z-10 overflow-y-auto no-scrollbar">
                 <div className="flex flex-col items-center mb-8 shrink-0">
                     <h1 className="text-[2rem] md:text-[2.5rem] font-serif text-[#1C1917] tracking-tight mb-2 text-center">
-                        What does your week look like?
+                        What does your day look like?
                     </h1>
                     <p className="text-[17px] text-[#A8A29E] font-light tracking-wide text-center">
                         Swipe to add. Tap to remove.
@@ -131,23 +131,23 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
 
                 {/* Day Columns / Rows */}
                 <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 pb-8 shrink-0">
-                    {DAYS.map((day) => {
-                        const dayTasks = addedTasks.filter(t => t.day === day);
-                        const hasTasks = dayTasks.length > 0;
+                    {TIMES.map((time) => {
+                        const timeTasks = addedTasks.filter(t => t.time === time);
+                        const hasTasks = timeTasks.length > 0;
 
                         return (
-                            <div key={day} className="flex flex-col">
+                            <div key={time} className="flex flex-col">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className={`px-3 py-1 rounded-full text-xs font-medium tracking-wide transition-colors
                                         ${hasTasks ? "bg-[#D4622A] text-white" : "bg-[#F5F5F4] text-[#A8A29E]"}`}
                                     >
-                                        {day}
+                                        {time}
                                     </div>
                                     {!hasTasks && <div className="h-[1px] flex-1 bg-[#F5F5F4]"></div>}
                                 </div>
 
                                 <AnimatePresence>
-                                    {dayTasks.map(task => (
+                                    {timeTasks.map(task => (
                                         <motion.div
                                             key={task.id}
                                             initial={{ opacity: 0, height: 0, scale: 0.95 }}
@@ -174,8 +174,8 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                         );
                     })}
 
-                    {/* Unassigned Tasks (Added to 'My Week' but no specific day) */}
-                    {addedTasks.filter(t => !t.day).length > 0 && (
+                    {/* Unassigned Tasks (Added to 'My Day' but no specific day) */}
+                    {addedTasks.filter(t => !t.time).length > 0 && (
                         <div className="flex flex-col mt-4">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="px-3 py-1 rounded-full text-xs font-medium tracking-wide bg-[#8FAF8F] text-white">
@@ -183,7 +183,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                                 </div>
                             </div>
                             <AnimatePresence>
-                                {addedTasks.filter(t => !t.day).map(task => (
+                                {addedTasks.filter(t => !t.time).map(task => (
                                     <motion.div
                                         key={task.id}
                                         initial={{ opacity: 0, height: 0, scale: 0.95 }}
@@ -211,7 +211,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
             {/* Bottom Half - The River Cards (Tinder Swipe) */}
             <div className="h-[45vh] w-full flex items-center justify-center relative perspective-1000 z-20 pb-12">
                 <AnimatePresence mode="popLayout">
-                    {currentTask && !showDaysFor && (
+                    {currentTask && !showTimeFor && (
                         <motion.div
                             key={currentTask}
                             drag="x"
@@ -246,7 +246,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                                     </h2>
                                 )}
                                 <p className="text-[15px] text-[#A8A29E] font-light">
-                                    Does this show up in your week?
+                                    Does this show up in your day?
                                 </p>
 
                                 {/* Card Action Buttons */}
@@ -261,7 +261,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                                         onClick={() => handleAction('ADD')}
                                         className="flex items-center justify-center gap-2 px-6 py-3 bg-[#D4622A] text-white rounded-full font-medium shadow-sm hover:shadow-md hover:scale-105 transition-all"
                                     >
-                                        <Sparkles size={18} /> Add to my week
+                                        <Sparkles size={18} /> Add to my day
                                     </button>
                                     <button
                                         onClick={() => handleAction('ADD_TO_DAY')}
@@ -274,28 +274,28 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                         </motion.div>
                     )}
 
-                    {/* Day Picker Overlay */}
-                    {showDaysFor && (
+                    {/* Time Picker Overlay */}
+                    {showTimeFor && (
                         <motion.div
                             initial={{ y: 50, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 20, opacity: 0 }}
                             className="absolute z-40 bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-[#F5F5F4] flex flex-col items-center"
                         >
-                            <p className="text-[#A8A29E] text-sm mb-4 font-medium uppercase tracking-widest">Assign to a day</p>
+                            <p className="text-[#A8A29E] text-sm mb-4 font-medium uppercase tracking-widest">Assign to a time</p>
                             <div className="flex gap-3">
-                                {DAYS.map(day => (
+                                {TIMES.map(time => (
                                     <button
-                                        key={day}
-                                        onClick={() => assignDay(day)}
-                                        className="w-14 h-14 rounded-2xl bg-[#F5F5F4] text-[#1C1917] font-serif text-lg hover:bg-[#8FAF8F] hover:text-white transition-colors"
+                                        key={time}
+                                        onClick={() => assignTime(time)}
+                                        className="px-6 py-3 rounded-2xl bg-[#F5F5F4] text-[#1C1917] font-serif hover:bg-[#8FAF8F] hover:text-white transition-colors"
                                     >
-                                        {day}
+                                        {time}
                                     </button>
                                 ))}
                             </div>
                             <button
-                                onClick={() => setShowDaysFor(null)}
+                                onClick={() => setShowTimeFor(null)}
                                 className="mt-6 text-[13px] text-[#A8A29E] hover:text-[#1C1917] transition-colors"
                             >
                                 Cancel
@@ -304,7 +304,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                     )}
 
                     {/* Completion State */}
-                    {taskQueue.length === 0 && !showDaysFor && addedTasks.length >= 5 && (
+                    {taskQueue.length === 0 && !showTimeFor && addedTasks.length >= 5 && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -313,13 +313,13 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                             <div className="w-16 h-16 mx-auto bg-[#D4622A]/10 rounded-full flex items-center justify-center mb-4">
                                 <Sparkles className="text-[#D4622A]" size={24} />
                             </div>
-                            <h2 className="text-xl font-serif text-[#1C1917] mb-1">Great week.</h2>
+                            <h2 className="text-xl font-serif text-[#1C1917] mb-1">Great day.</h2>
                             <p className="text-sm text-[#A8A29E]">Ready to build your playbook.</p>
                         </motion.div>
                     )}
 
                     {/* Empty State warning if they swiped skip on everything */}
-                    {taskQueue.length === 0 && !showDaysFor && addedTasks.length < 5 && (
+                    {taskQueue.length === 0 && !showTimeFor && addedTasks.length < 5 && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -368,7 +368,7 @@ export default function KanbanRiver({ userId, onComplete }: Props) {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                 />
                 <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-[13px] text-[#A8A29E] whitespace-nowrap pb-2 font-medium">
-                    ✦ {addedTasks.length} tasks added to your week
+                    ✦ {addedTasks.length} tasks added to your day
                 </div>
             </div>
 
